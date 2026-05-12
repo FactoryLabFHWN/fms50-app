@@ -298,6 +298,28 @@ def erstelle_pdf(ticket, lang):
 for k,v in {"erkannt":False,"mod_id":None,"conf":0.0,"result_img":None,"anzahl":0}.items():
     if k not in st.session_state: st.session_state[k]=v
 
+# ── Passwort-Schutz ──────────────────────────────────────────────────
+if "authentifiziert" not in st.session_state:
+    st.session_state.authentifiziert = False
+
+if not st.session_state.authentifiziert:
+    col_logo_pw, col_title_pw = st.columns([1, 4])
+    with col_logo_pw:
+        st.markdown(f'<img src="data:image/jpeg;base64,{LOGO_B64}" style="height:70px;margin-top:8px">',unsafe_allow_html=True)
+    with col_title_pw:
+        st.markdown("## FMS50 – Maintenance System")
+        st.markdown("<small style='color:#888'>FactoryLab FHWN</small>",unsafe_allow_html=True)
+    st.divider()
+    st.markdown("### 🔒 Bitte Passwort eingeben / Please enter password")
+    pw_input = st.text_input("Passwort / Password", type="password", label_visibility="collapsed")
+    if st.button("Anmelden / Login", type="primary"):
+        if pw_input == "FactoryLab.2022":
+            st.session_state.authentifiziert = True
+            st.rerun()
+        else:
+            st.error("❌ Falsches Passwort. / Wrong password.")
+    st.stop()
+
 # ── Sprache & Header ─────────────────────────────────────────────────
 sprache = st.sidebar.radio("🌐 Language / Sprache",["DE","EN"],horizontal=True)
 SF = STATUS_FARBEN[sprache]
