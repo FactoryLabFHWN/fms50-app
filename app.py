@@ -560,8 +560,15 @@ if not hist:
     lbl_leer = "Noch keine Tickets erstellt." if sprache=="DE" else "No tickets created yet."
     st.info(lbl_leer)
 else:
-    for i, t in enumerate(reversed(hist)):
-        real_i = len(hist) - 1 - i
+    prio_order = {"🔴 Hoch": 0, "🟡 Mittel": 1, "🟢 Niedrig": 2,
+                  "🔴 High": 0, "🟡 Medium": 1, "🟢 Low": 2}
+    hist_sorted = sorted(enumerate(hist), key=lambda x: (
+        prio_order.get(x[1].get("Priorität", "🟡 Mittel"), 1),
+        x[1].get("Zeitstempel", "")
+    ), reverse=False)
+    hist_sorted = [(i, t) for i, t in hist_sorted]
+
+    for sort_pos, (real_i, t) in enumerate(hist_sorted):
         stat = t.get("Status","–")
         e2,f2 = SF.get(stat,("⚪","#888"))
         exp_lbl = f"{t.get('Ticket-Nr.','–')} · {t.get('Modul','–')} · {e2} {stat} · {t.get('Zeitstempel','–')}"
@@ -574,11 +581,26 @@ else:
                     st.markdown(f"**{k}:** {v}")
 
             st.divider()
-            lbl_edit = "Status ändern:" if sprache=="DE" else "Change status:"
-            st.markdown(f"**{lbl_edit}**")
+            PRIORITAET = {
+                "DE": {"🔴 Hoch": "#E24B4A", "🟡 Mittel": "#EF9F27", "🟢 Niedrig": "#1D9E75"},
+                "EN": {"🔴 High": "#E24B4A", "🟡 Medium": "#EF9F27", "🟢 Low": "#1D9E75"},
+            }
+            PR = PRIORITAET[sprache]
+            lbl_stat_edit = "Status ändern:" if sprache=="DE" else "Change status:"
+            lbl_prio_edit = "Priorität:" if sprache=="DE" else "Priority:"
+            st.markdown(f"**{lbl_stat_edit}**")
             new_stat = st.selectbox(f"Status_{real_i}", options=list(SF.keys()),
                                     index=list(SF.keys()).index(stat) if stat in SF.keys() else 0,
                                     label_visibility="collapsed", key=f"stat_{real_i}")
+            st.markdown(f"**{lbl_prio_edit}**")
+            cur_prio = t.get("Priorität", list(PR.keys())[1])
+            if cur_prio not in PR.keys():
+                cur_prio = list(PR.keys())[1]
+            new_prio = st.selectbox(f"Prio_{real_i}", options=list(PR.keys()),
+                                    index=list(PR.keys()).index(cur_prio),
+                                    label_visibility="collapsed", key=f"prio_{real_i}")
+            prio_farbe = PR[new_prio]
+            st.markdown(f'<span style="color:{prio_farbe};font-weight:600">{new_prio}</span>', unsafe_allow_html=True)
             lbl_save = "Speichern" if sprache=="DE" else "Save"
             lbl_del  = "🗑️ Löschen" if sprache=="DE" else "🗑️ Delete"
             btn_col1, btn_col2 = st.columns([1,1])
@@ -586,6 +608,7 @@ else:
                 if st.button(lbl_save, key=f"save_{real_i}", use_container_width=True):
                     hist[real_i]["Status"] = new_stat
                     hist[real_i]["Status seit"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    hist[real_i]["Priorität"] = new_prio
                     speichere_historie(hist)
                     st.success("Gespeichert!" if sprache=="DE" else "Saved!")
                     st.rerun()
